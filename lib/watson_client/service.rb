@@ -17,6 +17,8 @@ module WatsonClient
       
       @gateways = fetch_gateways
       @doc_urls = fetch_doc_urls
+
+      fetch_all_services
     end
 
     def fetch_gateways
@@ -27,6 +29,15 @@ module WatsonClient
     def fetch_doc_urls
       { doc_base1: api_docs.delete(:doc_base1),
         doc_base2: api_docs.delete(:doc_base2) }
+    end
+
+    def fetch_all_services
+      @all = []
+
+      # yet to be written
+      retrieve_doc(doc_urls).each_value do |list|
+        @all << list['title'].gsub(/\s+(.)/) {$1.upcase}
+      end
     end
 
     def update_api_docs
