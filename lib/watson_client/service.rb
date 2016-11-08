@@ -4,6 +4,7 @@ module WatsonClient
   # All Watson services defined here
   class Service
     attr_reader :api_docs, :gateways, :doc_urls, :all
+
     def initialise
       @api_docs = {
         gateway: 'https://gateway.watsonplatform.net',
@@ -18,7 +19,16 @@ module WatsonClient
       @gateways = fetch_gateways
       @doc_urls = fetch_doc_urls
 
-      fetch_all_services
+      @all = fetch_all_services
+    end
+
+    def update_api_docs
+      docs = JSON.parse(ENV['WATSON_API_DOCS'] || '{}')
+      return if docs.empty?
+
+      docs.each_pair do |key, value|
+        @api_docs[key.to_sym] = value
+      end
     end
 
     def fetch_gateways
@@ -32,11 +42,13 @@ module WatsonClient
     end
 
     def retrieve_docs
+      retrieve_docs_from_host1.merge(retrieve_docs_from_host2)
+    end
+
+    # Retreives docs from Watson Developercloud
+    def retrieve_docs_from_host2
       apis  = {}
 
-      
-
-      # Watson Developercloud
       host2 = doc_urls[:doc_base2][%r{^https?:\/\/[^\/]+/}]
       open(doc_urls[:doc_base2], Options, &:read).scan(/<li>\s*<img.+data-src=.+?>\s*<h2><a href="(.+?)".*?>\s*(.+?)\s*<\/a><\/h2>\s*<p>(.+?)<\/p>\s*<\/li>/) do
         api = {'path'=>$1, 'title'=>$2, 'description'=>$3}
@@ -72,25 +84,15 @@ module WatsonClient
     def fetch_all_services
       @all = []
 
-      # yet to be written
       retrieve_docs.each_value do |list|
+                                             # This can be re written
         @all << list['title'].gsub(/\s+(.)/) {$1.upcase}
-      end
-    end
-
-    def update_api_docs
-      docs = JSON.parse(ENV['WATSON_API_DOCS'] || '{}')
-      return if docs.empty?
-
-      docs.each_pair do |key, value|
-        @api_docs[key.to_sym] = value
       end
     end
   end
 end
 
-
-  # Options  = api_docs
-  # Services = JSON.parse(ENV['VCAP_SERVICES'] || '{}')
-  # DefaultParams = {:user=>'username', :password=>'password'}
-  # AvailableAPIs = []
+# Options  = api_docs
+# Services = JSON.parse(ENV['VCAP_SERVICES'] || '{}')
+# DefaultParams = {:user=>'username', :password=>'password'}
+# AvailableAPIs = []
